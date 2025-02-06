@@ -1,0 +1,2 @@
+Loading in dist train statistics from train_statistics_celeba_model/ddim10/cifar10.npz
+Fitting 10 folds for each of 8 candidates, totalling 80 fits
