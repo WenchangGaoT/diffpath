@@ -12,6 +12,7 @@ from ood_utils import load_data, dict2namespace
 from tqdm import tqdm
 import yaml
 import os
+from subset_utils import load_subset_data
 
 
 def main():
@@ -20,7 +21,7 @@ def main():
     dist_util.setup_dist(args.device)
     args.timestep_respacing = f"ddim{args.n_ddim_steps}"
     assert args.model in ["imagenet", "celeba"]
-    
+
     with open(args.config, 'r') as fp:
         config = yaml.safe_load(fp)
     config = dict2namespace(config)
@@ -45,9 +46,15 @@ def main():
         dataset_name = args.dataset
     print(f"Loading {dataset_name}")
     dataloader = load_data(args.dataset, args.data_dir, args.batch_size, args.image_size, train=True)
+    original_size = sum(1 for _ in dataloader)
+    print('Original dataloader: ', original_size)
+    subset_loader = load_subset_data(dataloader, args.subset_ratio)
+    subset_size = sum(1 for _ in subset_loader)
+    dataloader = subset_loader
+    print('Subset dataloader: ', subset_size)
     reverse_sample_fn = diffusion.ddim_reverse_sample_loop
     n_ddim_steps = len(diffusion.betas)
-    
+
     # statistics of diffusion path to save
     eps_sum_arr = [] # sum of eps
     eps_sum_abs_arr = [] # sum of eps absolute val
@@ -55,14 +62,14 @@ def main():
     eps_sum_sq_sqrt_arr = [] # sum of eps squared square root
     eps_sum_cb_arr = [] # sum of eps cubed
     eps_sum_cb_cbrt_arr = [] # sum of eps cubed cube root
-    
+
     deps_dt_arr = [] # sum of rate-of-change deps/dt
     deps_dt_abs_arr = [] # sum of deps/dt absolute val
     deps_dt_sq_arr = [] # sum of deps/dt squared
     deps_dt_sq_sqrt_arr = [] # sum of deps/dt squared square root
-    deps_dt_cb_arr = [] # sum of deps/dt cubed 
+    deps_dt_cb_arr = [] # sum of deps/dt cubed
     deps_dt_cb_cbrt_arr = [] # sum of deps/dt cubed cube root
-    
+
     for data in tqdm(dataloader, f"encoding {args.dataset} with {args.timestep_respacing} and calculating all statistics"):
         x0 = data[0].to(dist_util.dev())
         _, eps = reverse_sample_fn(
@@ -102,7 +109,7 @@ def main():
         deps_dt_sq_sqrt_arr.extend(deps_dt_sq_sqrt.tolist())
         deps_dt_cb_arr.extend(deps_dt_cb.tolist())
         deps_dt_cb_cbrt_arr.extend(deps_dt_cb_cbrt.tolist())
-    
+
     eps_sum_arr = np.array(eps_sum_arr)
     eps_sum_abs_arr = np.array(eps_sum_abs_arr)
     eps_sum_sq_arr = np.array(eps_sum_sq_arr)
@@ -118,9 +125,9 @@ def main():
 
     save_dir = f"train_statistics_{args.model}_model/{args.timestep_respacing}"
     os.makedirs(save_dir, exist_ok=True)
-    np.savez_compressed(os.path.join(save_dir, args.dataset), eps_sum=eps_sum_arr, eps_sum_abs=eps_sum_abs_arr, eps_sum_sq=eps_sum_sq_arr, 
-                        eps_sum_sq_sqrt=eps_sum_sq_sqrt_arr, eps_sum_cb=eps_sum_cb_arr, eps_sum_cb_cbrt = eps_sum_cb_cbrt_arr, 
-                        deps_dt=deps_dt_arr, deps_dt_abs = deps_dt_abs_arr, deps_dt_sq=deps_dt_sq_arr, 
+    np.savez_compressed(os.path.join(save_dir, args.dataset), eps_sum=eps_sum_arr, eps_sum_abs=eps_sum_abs_arr, eps_sum_sq=eps_sum_sq_arr,
+                        eps_sum_sq_sqrt=eps_sum_sq_sqrt_arr, eps_sum_cb=eps_sum_cb_arr, eps_sum_cb_cbrt = eps_sum_cb_cbrt_arr,
+                        deps_dt=deps_dt_arr, deps_dt_abs = deps_dt_abs_arr, deps_dt_sq=deps_dt_sq_arr,
                         deps_dt_sq_sqrt=deps_dt_sq_sqrt_arr, deps_dt_cb=deps_dt_cb_arr, deps_dt_cb_cbrt=deps_dt_cb_cbrt_arr)
 
 
@@ -134,6 +141,7 @@ def create_argparser():
         data_dir="",
         dataset="",
         model_path="",
+        subset_ratio=1.0,
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()
