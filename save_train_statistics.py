@@ -123,7 +123,8 @@ def main():
     deps_dt_cb_arr = np.array(deps_dt_cb_arr)
     deps_dt_cb_cbrt_arr = np.array(deps_dt_cb_cbrt_arr)
 
-    save_dir = f"train_statistics_{args.model}_model/{args.timestep_respacing}"
+    # Added subset ratio into the path
+    save_dir = f"train_statistics_{args.model}_model/{args.timestep_respacing}/subset_{args.subset_ratio}"
     os.makedirs(save_dir, exist_ok=True)
     np.savez_compressed(os.path.join(save_dir, args.dataset), eps_sum=eps_sum_arr, eps_sum_abs=eps_sum_abs_arr, eps_sum_sq=eps_sum_sq_arr,
                         eps_sum_sq_sqrt=eps_sum_sq_sqrt_arr, eps_sum_cb=eps_sum_cb_arr, eps_sum_cb_cbrt = eps_sum_cb_cbrt_arr,

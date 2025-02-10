@@ -7,11 +7,11 @@ def load_subset_data(loader: DataLoader, subset_ratio: float):
     '''
     Returns a new dataloader loading a random subset from the original dataloader.
 
-    params:
+    Params:
         loader: torch.utils.data.DataLoader, the original dataloder containing whole dataset
         subset ratio: float, the ratio of subset length to dataset length
 
-    returns:
+    Returns:
         torch.utils.data.DataLoader
 
     Examples:
@@ -30,3 +30,47 @@ def load_subset_data(loader: DataLoader, subset_ratio: float):
         shuffle=False,
         sampler=sampler
     )
+
+def get_pseudo_id_stats(id_test_stats: np.ndarray, score_id: np.ndarray,
+                        ood_test_stats: np.ndarray, score_ood: np.ndarray,
+                        threshold_score: float):
+    '''
+    Extracts pseudo-id samples from test set and calculates the percentage of true positive samples in the set.
+
+    Params:
+        id_test_stats: np.ndarray of shape (N, 6), the computed stats of id test set
+        score_id: np.ndarray of shape (N,), the score of id test set
+        ood_test_stats: np.ndarray of shape (N, 6), the computed stats of ood test set
+        score_ood: np.ndarray of shape (N,), the score of ood test set
+        threshold_score: float, decision boundary of id vs ood
+
+    Returns:
+        (pseudo-id stats, percentage of true positive samples)
+
+    '''
+    tp_indices = np.where(score_id >= threshold_score)[0]
+    print('num tp samples: ', tp_indices.shape[0])
+    fp_indices = np.where(score_ood >= threshold_score)[0]
+    print('num fp samples: ', fp_indices.shape[0])
+    pseudo_id_stats = np.concatenate([id_test_stats[tp_indices], ood_test_stats[fp_indices]], axis=0)
+    ratio = len(tp_indices) / len(pseudo_id_stats)
+    return (pseudo_id_stats, ratio)
+
+
+def enhance_train_stats(train_stats: np.ndarray, pseudo_id_stats: np.ndarray, enhance_ratio: float=0.1):
+    '''
+    Enhance training set with pseudo-id data in the test sets. Returns the enhanced training set stats.
+
+    Param:
+        train_stats: np.ndarray of shape (N, 6), the computed stats of training set
+        pseudo_id_stats: np.ndarray of shape (N, 6), the estimated id set in test set
+        enhance_ratio: float, the percentage of pseudo-id samples to be added into training set
+
+    Returns:
+        enhanced train stats, np.ndarray
+    '''
+    num_pseudo_id_samples = pseudo_id_stats.shape[0]
+    num_enhance_samples = int(num_pseudo_id_samples * enhance_ratio)
+    indices = torch.randperm(num_pseudo_id_samples).numpy()[:num_enhance_samples]
+    enhance_samples = pseudo_id_stats[indices, :]
+    return np.concatenate([train_stats, enhance_samples], axis=0)
