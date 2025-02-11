@@ -57,20 +57,33 @@ def get_pseudo_id_stats(id_test_stats: np.ndarray, score_id: np.ndarray,
     return (pseudo_id_stats, ratio)
 
 
-def enhance_train_stats(train_stats: np.ndarray, pseudo_id_stats: np.ndarray, enhance_ratio: float=0.1):
+def enhance_train_stats(train_stats: np.ndarray, pseudo_id_stats: np.ndarray, num_enhance_samples: int=0):
     '''
     Enhance training set with pseudo-id data in the test sets. Returns the enhanced training set stats.
 
     Param:
         train_stats: np.ndarray of shape (N, 6), the computed stats of training set
         pseudo_id_stats: np.ndarray of shape (N, 6), the estimated id set in test set
-        enhance_ratio: float, the percentage of pseudo-id samples to be added into training set
+        num_enhance_samples: int, the number of pseudo-id samples to be added into training set
 
     Returns:
         enhanced train stats, np.ndarray
     '''
     num_pseudo_id_samples = pseudo_id_stats.shape[0]
-    num_enhance_samples = int(num_pseudo_id_samples * enhance_ratio)
     indices = torch.randperm(num_pseudo_id_samples).numpy()[:num_enhance_samples]
     enhance_samples = pseudo_id_stats[indices, :]
     return np.concatenate([train_stats, enhance_samples], axis=0)
+
+def get_topk_score_stats(id_test_stats: np.ndarray, id_score: np.ndarray,
+                         ood_test_stats: np.ndarray, ood_score: np.ndarray,
+                         topk: int):
+    num_id_samples = id_score.shape[0]
+    concat_score = np.concatenate([id_score, ood_score], axis=0)
+    topk_indices = np.argsort(concat_score)[:topk]
+    tp_indices = topk_indices[np.where(topk_indices < num_id_samples)[0]]
+    fp_indices = topk_indices[np.where(topk_indices >= num_id_samples)[0]] % num_id_samples
+    tp_stats = id_test_stats[tp_indices]
+    fp_stats = ood_test_stats[fp_indices]
+    pseudo_stats = np.concatenate([tp_stats, fp_stats], axis=0)
+    ratio = tp_indices.shape[0] / pseudo_stats.shape[0]
+    return pseudo_stats, ratio

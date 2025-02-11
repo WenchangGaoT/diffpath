@@ -1,0 +1,18 @@
+Loading in dist train statistics from train_statistics_celeba_model/ddim10/subset_0.001/cifar10.npz
+Original train stats: (50, 6)
+Fitting 10 folds for each of 20 candidates, totalling 200 fits
+Best: -9.210948 using {'GMM__covariance_type': 'spherical', 'GMM__max_iter': 200, 'GMM__n_components': 5}
+Loading in dist test statistics from test_statistics_celeba_model/ddim10/cifar10.npz
+id test score:  -9.520595020563867
+Loading out of dist test statistics from test_statistics_celeba_model/ddim10/svhn.npz
+ood test score:  -14.304806285881806
+In dist: cifar10, Out of dist: svhn, DiffPath 6D AUROC: 0.8749270013829133
+num tp samples:  175
+num fp samples:  5
+TP ratio:  0.9722222222222222
+Enhanced train stats:  (80, 6)
+Fitting 10 folds for each of 20 candidates, totalling 200 fits
+Best: -8.201288 using {'GMM__covariance_type': 'spherical', 'GMM__max_iter': 200, 'GMM__n_components': 5}
+id test score:  -11.545960709052704
+ood test score:  -15.347967730905308
+After enhancement, DiffPath 6D AUROC: 0.8294202865703749

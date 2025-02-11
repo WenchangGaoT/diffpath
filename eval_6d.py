@@ -54,7 +54,7 @@ def main():
     parser.add_argument('--out_of_dist', type=str, required=True, help='Out of distribution type')
     parser.add_argument('--n_ddim_steps', type=int, default=10, help='Number of ddim steps')
     # Subset parameters
-    parser.add_argument('--enhance_ratio', type=float, default=0, help='The ratio of pseudo-id samples to add into train set')
+    parser.add_argument('--num_enhance_samples', type=int, default=0, help='The number of pseudo-id samples to add into train set')
     parser.add_argument('--subset_ratio', type=float, default=1.0, help='The ratio of subset to whole train set')
     args = parser.parse_args()
 
@@ -71,6 +71,7 @@ def main():
     print(f"Loading in dist train statistics from {in_dist_train_path}")
     in_dist_train_statistics_file = np.load(in_dist_train_path)
     id_train_statistics = load_statistics(in_dist_train_statistics_file) # (N, 6)
+    print(f'Original train stats: {id_train_statistics.shape}')
 
     # grid search for best GMM params
     param_grid = {
@@ -117,9 +118,10 @@ def main():
     print(f"In dist: {args.in_dist}, Out of dist: {args.out_of_dist}, DiffPath 6D AUROC: {auroc}")
 
     # Enhance train set with pseudo-id set
-    pseudo_id_stats, ratio = get_pseudo_id_stats(id_test_statistics, score_test_id, ood_test_statistics, score_ood, -4)
+    # pseudo_id_stats, ratio = get_pseudo_id_stats(id_test_statistics, score_test_id, ood_test_statistics, score_ood, -4)
+    pseudo_id_stats, ratio = get_topk_score_stats(id_test_statistics, score_test_id, ood_test_statistics, score_ood, args.num_enhance_samples)
     print('TP ratio: ', ratio)
-    enhanced_train_stats = enhance_train_stats(id_train_statistics, pseudo_id_stats, args.enhance_ratio)
+    enhanced_train_stats = enhance_train_stats(id_train_statistics, pseudo_id_stats, args.num_enhance_samples)
     print('Enhanced train stats: ', enhanced_train_stats.shape)
     best_gmm = gridsearch_and_fit(gmm_clf, param_grid, enhanced_train_stats)
     auroc = eval_auroc_with_stats(best_gmm, id_test_statistics, ood_test_statistics)

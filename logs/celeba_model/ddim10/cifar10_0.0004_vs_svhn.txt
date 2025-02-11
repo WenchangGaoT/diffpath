@@ -1,17 +1,16 @@
 Loading in dist train statistics from train_statistics_celeba_model/ddim10/subset_0.0004/cifar10.npz
+Original train stats: (20, 6)
 Fitting 10 folds for each of 20 candidates, totalling 200 fits
-Best: -13.553672 using {'GMM__covariance_type': 'spherical', 'GMM__max_iter': 200, 'GMM__n_components': 5}
+Best: -16.100705 using {'GMM__covariance_type': 'spherical', 'GMM__max_iter': 200, 'GMM__n_components': 5}
 Loading in dist test statistics from test_statistics_celeba_model/ddim10/cifar10.npz
-id test score:  -10.910940597543007
+id test score:  -11.097307150306525
 Loading out of dist test statistics from test_statistics_celeba_model/ddim10/svhn.npz
-ood test score:  -15.273056459252984
-In dist: cifar10, Out of dist: svhn, DiffPath 6D AUROC: 0.7980139635832821
-num tp samples:  317
-num fp samples:  0
-TP ratio:  1.0
-Enhanced train stats:  (20, 6)
+ood test score:  -17.51916890862216
+In dist: cifar10, Out of dist: svhn, DiffPath 6D AUROC: 0.8559316994468348
+TP ratio:  0.9333333333333333
+Enhanced train stats:  (50, 6)
 Fitting 10 folds for each of 20 candidates, totalling 200 fits
-Best: -13.885170 using {'GMM__covariance_type': 'spherical', 'GMM__max_iter': 200, 'GMM__n_components': 5}
-id test score:  -11.14506023707043
-ood test score:  -16.039892290299715
-After enhancement, DiffPath 6D AUROC: 0.8024181430547019
+Best: -8.173516 using {'GMM__covariance_type': 'tied', 'GMM__max_iter': 200, 'GMM__n_components': 5}
+id test score:  -5.618065385023545
+ood test score:  -14.813137928402506
+After enhancement, DiffPath 6D AUROC: 0.9486627957897971
