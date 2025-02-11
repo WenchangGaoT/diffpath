@@ -20,6 +20,31 @@ def load_statistics(d):
     stacked = np.column_stack([eps, eps_sq, eps_cb, deps_dt, deps_dt_sq, deps_dt_cb])
     return stacked
 
+def gridsearch_and_fit(gmm_clf: Pipeline, param_grid: dict, train_stats):
+    grid = GridSearchCV(estimator=gmm_clf, param_grid=param_grid, cv=10, n_jobs=5,verbose=1)
+    grid_result = grid.fit(train_stats)
+    print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+    train_score = grid_result.best_score_
+    best_gmm = gmm_clf.set_params(**grid.best_params_)
+    best_gmm.fit(train_stats)
+    return best_gmm
+
+def eval_auroc_with_stats(best_gmm, id_test_stats, ood_test_stats):
+    score_test_id = best_gmm.score_samples(id_test_stats)
+    score_test_ood = best_gmm.score_samples(ood_test_stats)
+    print('id test score: ', score_test_id.mean())
+    print('ood test score: ', score_test_ood.mean())
+
+    y_test_id = np.ones(score_test_id.shape[0])
+    y_test_ood = np.zeros(score_test_ood.shape[0])
+    y_true = np.append(y_test_id, y_test_ood)
+
+    sample_score = np.append(score_test_id, score_test_ood)
+    auroc = roc_auc_score(y_true, sample_score)
+
+    return auroc
+
+
 
 def main():
 
@@ -46,7 +71,6 @@ def main():
     print(f"Loading in dist train statistics from {in_dist_train_path}")
     in_dist_train_statistics_file = np.load(in_dist_train_path)
     id_train_statistics = load_statistics(in_dist_train_statistics_file) # (N, 6)
-    print(id_train_statistics.shape)
 
     # grid search for best GMM params
     param_grid = {
@@ -59,12 +83,13 @@ def main():
         ("GMM", GaussianMixture())
     ])
 
-    grid = GridSearchCV(estimator=gmm_clf, param_grid=param_grid, cv=10, n_jobs=5,verbose=1)
-    grid_result = grid.fit(id_train_statistics)
-    print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
-    train_score = grid_result.best_score_
-    best_gmm = gmm_clf.set_params(**grid.best_params_)
-    best_gmm.fit(id_train_statistics)
+    best_gmm = gridsearch_and_fit(gmm_clf, param_grid, id_train_statistics)
+#     grid = GridSearchCV(estimator=gmm_clf, param_grid=param_grid, cv=10, n_jobs=5,verbose=1)
+#     grid_result = grid.fit(id_train_statistics)
+#     print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+#     train_score = grid_result.best_score_
+#     best_gmm = gmm_clf.set_params(**grid.best_params_)
+#     best_gmm.fit(id_train_statistics)
 
     # load in distribution test dataset statistics
     in_dist_test_path = os.path.join(f"test_statistics_{args.model}_model/ddim{args.n_ddim_steps}/", args.in_dist) + ".npz"
@@ -92,11 +117,13 @@ def main():
     print(f"In dist: {args.in_dist}, Out of dist: {args.out_of_dist}, DiffPath 6D AUROC: {auroc}")
 
     # Enhance train set with pseudo-id set
-    pseudo_id_stats, ratio = get_pseudo_id_stats(id_test_statistics, score_test_id, ood_test_statistics, score_ood, train_score)
-    print('Pseudo id stats: ', pseudo_id_stats)
+    pseudo_id_stats, ratio = get_pseudo_id_stats(id_test_statistics, score_test_id, ood_test_statistics, score_ood, -4)
     print('TP ratio: ', ratio)
     enhanced_train_stats = enhance_train_stats(id_train_statistics, pseudo_id_stats, args.enhance_ratio)
-
+    print('Enhanced train stats: ', enhanced_train_stats.shape)
+    best_gmm = gridsearch_and_fit(gmm_clf, param_grid, enhanced_train_stats)
+    auroc = eval_auroc_with_stats(best_gmm, id_test_statistics, ood_test_statistics)
+    print(f"After enhancement, DiffPath 6D AUROC: {auroc}")
 
 if __name__ == "__main__":
     main()
