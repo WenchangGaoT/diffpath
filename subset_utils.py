@@ -36,6 +36,8 @@ def get_subset_stats(stats, num_samples: int):
         tot_samples = stats['deps_dt_sq_sqrt'].shape[0]
     else:
         tot_samples = stats.shape[0]
+    tot_samples = stats['deps_dt_sq_sqrt'].shape[0]
+    print('tot samples: ',tot_samples)
     indices = torch.randperm(tot_samples).numpy()[:num_samples]
     return stats[indices] if isinstance(stats, np.ndarray) \
                           else {k: v[indices] for k, v in stats.items()}
