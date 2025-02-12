@@ -31,6 +31,15 @@ def load_subset_data(loader: DataLoader, subset_ratio: float):
         sampler=sampler
     )
 
+def get_subset_stats(stats, num_samples: int):
+    if isinstance(stats, dict):
+        tot_samples = stats['deps_dt_sq_sqrt'].shape[0]
+    else:
+        tot_samples = stats.shape[0]
+    indices = torch.randperm(tot_samples).numpy()[:num_samples]
+    return stats[indices] if isinstance(stats, np.ndarray) \
+                          else {k: v[indices] for k, v in stats.items()}
+
 def get_pseudo_id_stats(id_test_stats: np.ndarray, score_id: np.ndarray,
                         ood_test_stats: np.ndarray, score_ood: np.ndarray,
                         threshold_score: float):
@@ -74,16 +83,27 @@ def enhance_train_stats(train_stats: np.ndarray, pseudo_id_stats: np.ndarray, nu
     enhance_samples = pseudo_id_stats[indices, :]
     return np.concatenate([train_stats, enhance_samples], axis=0)
 
-def get_topk_score_stats(id_test_stats: np.ndarray, id_score: np.ndarray,
-                         ood_test_stats: np.ndarray, ood_score: np.ndarray,
-                         topk: int):
+def get_topk_score_indices(id_score: np.ndarray, ood_score: np.ndarray, topk: int, use_greatest=True):
     num_id_samples = id_score.shape[0]
     concat_score = np.concatenate([id_score, ood_score], axis=0)
-    topk_indices = np.argsort(concat_score)[:topk]
+    topk_indices = np.argsort(concat_score)[-topk:] if use_greatest else np.argsort(concat_score)[:topk]
     tp_indices = topk_indices[np.where(topk_indices < num_id_samples)[0]]
     fp_indices = topk_indices[np.where(topk_indices >= num_id_samples)[0]] % num_id_samples
+    return tp_indices, fp_indices
+
+def get_topk_score_stats(id_test_stats: np.ndarray, id_score: np.ndarray,
+                         ood_test_stats: np.ndarray, ood_score: np.ndarray,
+                         topk: int, use_greatest=True):
+    tp_indices, fp_indices = get_topk_score_indices(id_score, ood_score, topk, use_greatest)
+    tp_score = id_score[tp_indices]
+    fp_score = ood_score[fp_indices]
     tp_stats = id_test_stats[tp_indices]
     fp_stats = ood_test_stats[fp_indices]
     pseudo_stats = np.concatenate([tp_stats, fp_stats], axis=0)
+    pseudo_score = np.concatenate([tp_score, fp_score], axis=0)
+    labels = np.zeros_like(pseudo_score, dtype=np.int32)
+    num_id_samples = tp_indices.shape[0]
+    labels[:num_id_samples] = 1
     ratio = tp_indices.shape[0] / pseudo_stats.shape[0]
-    return pseudo_stats, ratio
+    return pseudo_stats, pseudo_score, labels, ratio
+

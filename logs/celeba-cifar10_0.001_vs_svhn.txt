@@ -1,6 +1,0 @@
-Loading in dist train statistics from train_statistics_celeba_model/ddim10/cifar10.npz
-Fitting 10 folds for each of 16 candidates, totalling 160 fits
-Best: -11.563084 using {'GMM__covariance_type': 'spherical', 'GMM__max_iter': 200, 'GMM__n_components': 10}
-Loading in dist test statistics from test_statistics_celeba_model/ddim10/cifar10.npz
-Loading out of dist test statistics from test_statistics_celeba_model/ddim10/svhn.npz
-In dist: cifar10, Out of dist: svhn, DiffPath 6D AUROC: 0.918267820374923
