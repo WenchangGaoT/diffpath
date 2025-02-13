@@ -162,8 +162,8 @@ cython_debug/
 #.idea/
 
 .vscode/
-train_statistics_celeba_model/
-test_statistics_celeba_model/
+# train_statistics_celeba_model/
+# test_statistics_celeba_model/
 train_statistics_imagenet_model/
 test_statistics_imagenet_model/
 *.pt
