@@ -35,7 +35,7 @@ def build_subset_per_process(dataset):
     n_processes  = MPI.COMM_WORLD.Get_size()
     n_current_rank = MPI.COMM_WORLD.Get_rank()
     n_indices = torch.arange(0, len(dataset), dtype=int)
-    
+
     indices_chunks = torch.chunk(n_indices, chunks=n_processes)
     indices_for_current_rank = indices_chunks[n_current_rank]
     subset = Subset(dataset, indices_for_current_rank)
@@ -132,14 +132,14 @@ def load_cifar100(data_dir, batch_size, image_size, train=False, interpolation_m
 
 
 def load_data(dataset, data_dir, batch_size, image_size, train, interpolation_mode='bilinear', shuffle=True):
-    
+
     if dataset == "cifar10":
         dataloader = load_cifar10(data_dir, batch_size, image_size, train, interpolation_mode, shuffle)
     elif dataset == "celeba":
         dataloader = load_celeba(data_dir, batch_size, image_size, train, interpolation_mode, shuffle)
     elif dataset == "celeba_resized":
         dataloader = load_celeba_resized(data_dir, batch_size, image_size, train, interpolation_mode, shuffle)
-    elif dataset == "svhn":
+    elif dataset == "svhn" or dataset == 'svhn_resized':
         dataloader = load_svhn(data_dir, batch_size, image_size, train, interpolation_mode, shuffle)
     elif dataset == "textures":
         dataloader = load_textures(data_dir, batch_size, image_size, train, interpolation_mode, shuffle)
