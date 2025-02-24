@@ -1,0 +1,56 @@
+tot samples:  50000
+Train stats: (100,)
+--------------------
+Calculating scores and AUROC with 100 training samples
+Fitting 10 folds for each of 96 candidates, totalling 960 fits
+Best: -8.148563 using {'GMM__covariance_type': 'diag', 'GMM__max_iter': 500, 'GMM__n_components': 3}
+Fitting KDE to in dist training set
+ID score with DiffPath-1d statistics:  -4.904115443629969
+OOD score with DiffPath-1d statistics:  -7.056670128614878
+ID score with DiffPath-6d statistics:  -8.603284585390943
+OOD score with DiffPath-6d statistics:  -13.466260202431943
+AUROC with DiffPath-1d statistics:  0.9371962757375537
+AUROC with DiffPath-6d statistics:  0.8287714121081746
+
+
+
+--------------------
+Finding outliers with DiffPath-1d estimator
+Among 100 outliers,             46 are actually ID samples
+Finding pseudo-ID samples with DiffPath-6d estimator from outliers
+Among 10 pseudo-id samples,           0 are actually ID samples
+----------
+Doing final classification with 1D estimator
+Fitting new 1D estimator with enhanced training stats 110
+Fitting KDE to in dist training set
+Enhanced id score evaluated with 1d estimator:  -4.926166764355705
+Enhanced ood score evaluated with 1d estimator:  -6.275456729281031
+AUROC after enhancement evaluated with 1d estimator:  0.9200181949139522
+----------
+Doing final classification with 6D estimator
+Fitting new GMM estimator with enhanced training stats 110
+Fitting 10 folds for each of 96 candidates, totalling 960 fits
+Best: -8.240591 using {'GMM__covariance_type': 'diag', 'GMM__max_iter': 500, 'GMM__n_components': 3}
+Enhanced id score evaluated with 6d estimator:  -8.262185178820635
+Enhanced ood score evaluated with 6d estimator:  -11.733053912789414
+AUROC after enhancement evaluated with 6d estimator:  0.7576153580208973
+--------------------
+Finding outliers with DiffPath-6d estimator
+Among 100 outliers,             43 are actually ID samples
+Finding pseudo-ID samples with DiffPath-1d estimator from outliers
+Among 10 pseudo-id samples,           10 are actually ID samples
+----------
+Doing final classification with 1D estimator
+Fitting new 1D estimator with enhanced training stats 110
+Fitting KDE to in dist training set
+Enhanced id score evaluated with 1d estimator:  -4.902748762400675
+Enhanced ood score evaluated with 1d estimator:  -7.141702507650909
+AUROC after enhancement evaluated with 1d estimator:  0.938289215196681
+----------
+Doing final classification with 6D estimator
+Fitting new GMM estimator with enhanced training stats 110
+Fitting 10 folds for each of 96 candidates, totalling 960 fits
+Best: -8.785932 using {'GMM__covariance_type': 'diag', 'GMM__max_iter': 100, 'GMM__n_components': 3}
+Enhanced id score evaluated with 6d estimator:  -6.625447497754858
+Enhanced ood score evaluated with 6d estimator:  -11.42916724739084
+AUROC after enhancement evaluated with 6d estimator:  0.8457474300860479

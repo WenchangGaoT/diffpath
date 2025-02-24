@@ -1,0 +1,22 @@
+tot samples:  50000
+Train stats: (100,)
+--------------------
+Calculating scores and AUROC with 100 training samples
+Fitting 10 folds for each of 96 candidates, totalling 960 fits
+Best: -8.226297 using {'GMM__covariance_type': 'spherical', 'GMM__max_iter': 500, 'GMM__n_components': 3}
+Fitting KDE to in dist training set
+ID score with DiffPath-1d statistics:  -4.8370032189412395
+OOD score with DiffPath-1d statistics:  -7.761867223419552
+ID score with DiffPath-6d statistics:  -8.157315126924608
+OOD score with DiffPath-6d statistics:  -13.725755712333152
+AUROC with DiffPath-1d statistics:  0.9400626978334359
+AUROC with DiffPath-6d statistics:  0.8933622080516287
+
+
+
+--------------------
+Finding outliers with DiffPath-1d estimator
+Among 100 outliers,             3 are actually ID samples
+Finding pseudo-ID samples with DiffPath-6d estimator from outliers
+97
+3

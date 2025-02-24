@@ -26,11 +26,22 @@ def redirect_log(model, n_ddim_steps, in_dist, out_dist,
     sys.stdout = open(log_path, 'w+')
 
 def load_whole_stats(model, n_ddim_steps, dist, is_train=True):
+    '''
+    Load the whole 7-D dataset from `${train}_statistics_${model}_model/ddim${n_ddim_steps}/${dist}`.
+
+    Return the loaded stats as a dictionary
+    '''
     prefix = 'train' if is_train else 'test'
     stats_path = os.path.join(f'{prefix}_statistics_{model}_model/ddim{n_ddim_steps}/', f'{dist}.npz')
     return dict(np.load(stats_path))
 
-def eval_score_with_stats(estimator, id_stats: np.ndarray, ood_stats: np.ndarray):
+def eval_score_with_stats(estimator, id_stats: np.ndarray, ood_stats: np.ndarray) -> tuple[np.ndarray, np.ndarray]: 
+    '''
+    Evaluate the score of ID dataset and OOD dataset according to their stats with a given estimator.
+
+    Params: 
+        estimator: sklearn.
+    '''
     score_id = estimator.score_samples(id_stats)
     score_ood = estimator.score_samples(ood_stats)
     return score_id, score_ood
@@ -50,14 +61,16 @@ def main():
     parser.add_argument('--out_of_dist', type=str, required=True, help='Out of distribution type')
     parser.add_argument('--n_ddim_steps', type=int, default=10, help='Number of ddim steps')
     # Subset parameters
-    parser.add_argument('--num_filter2_samples', type=int, default=0, help='The number of pseudo-id samples to add into train set')
     parser.add_argument('--num_train_samples', type=int, default=100, help='The number of train samples to fit GMM')
     parser.add_argument('--num_filter1_samples', type=int, default=100, help='The number of farthest samples to get from filter1')
+    parser.add_argument('--num_filter2_samples', type=int, default=10, help='The number of pseudo-id samples to add into train set')
     args = parser.parse_args()
 
     redirect_log(args.model, args.n_ddim_steps, args.in_dist, args.out_of_dist,
                  args.num_train_samples, args.num_filter1_samples, args.num_filter2_samples)
 
+    # Load in train stats then select a subset randomly
+    # Splits the 7-D stats into 6-D to fit DiffPath6D classifier and 6-D for DiffPath1D classifier
     train_stats_whole = load_whole_stats(args.model, args.n_ddim_steps, args.in_dist, True)
     train_stats_whole = get_subset_stats(train_stats_whole, args.num_train_samples)
     print(f'Train stats: {train_stats_whole["deps_dt_sq_sqrt"].shape}')
@@ -75,11 +88,15 @@ def main():
         ('GMM', GaussianMixture())
     ])
 
-    print('---------------------------------------------------------------------------------')
+    # Fit two classifiers with subset train samples
+    print('-' * 80)
     print(f'Calculating scores and AUROC with {args.num_train_samples} training samples')
+    assert train_stats_6d.shape[0] == args.num_train_samples 
+    assert train_stats_1d.shape[0] == args.num_train_samples
     naive_6d_estimator = gridsearch_and_fit(gmm_clf, param_grid, train_stats_6d)
     naive_1d_estimator = get_1d_estimator(train_stats_1d)
 
+    # Load test ID and OOD stats of test sets
     id_test_stats_whole = load_whole_stats(args.model, args.n_ddim_steps, args.in_dist, False)
     id_test_stats_6d = load_6d_statistics(id_test_stats_whole)
     id_test_stats_1d = load_1d_statistics(id_test_stats_whole)
@@ -87,7 +104,9 @@ def main():
     ood_test_stats_6d = load_6d_statistics(ood_test_stats_whole)
     ood_test_stats_1d = load_1d_statistics(ood_test_stats_whole)
 
-    # First evaluation with train samples only
+    # Chapter 1: First evaluation: 
+    # Estimate test sample scores with two fitted classifiers
+    # Note that the classifiers tend to be overfitted as number of samples is limited
     naive_1d_id_score, naive_1d_ood_score = eval_score_with_stats(naive_1d_estimator, id_test_stats_1d, ood_test_stats_1d)
     naive_1d_auroc = eval_auroc_with_score(naive_1d_id_score, naive_1d_ood_score)
     naive_6d_id_score, naive_6d_ood_score = eval_score_with_stats(naive_6d_estimator, id_test_stats_6d, ood_test_stats_6d)
@@ -98,104 +117,162 @@ def main():
     print('OOD score with DiffPath-6d statistics: ', naive_6d_ood_score.mean())
     print('AUROC with DiffPath-1d statistics: ', naive_1d_auroc)
     print('AUROC with DiffPath-6d statistics: ', naive_6d_auroc)
+    # First evaluation finishes here
 
+    # Chapter 2: Pseudo-ID set enhancement: 
+    # Since the classifiers tend to be overfitted, the outliers from the first evaluation
+    # contain both OOD and ID samples. These misclassified ID samples are more informative. 
+    # In this stage, we augment the train set by introducing pseufo-ID samples from the 
+    # outliers. We use one classifier (DP-6D) to find outliers, and another classifier (DP-1D)
+    # to find pseudo-ID (False Negative) samples and re-fit classifiers with enhanced dataset
+
+    ############################################################################
+    # Experiment 1: 
+    # 1D outlier detection -> 6D p-id detection
+    # Find outliers with DiffPath-1D Estimator
     print('\n\n')
-    print('---------------------------------------------------------------------------------')
+    print('=' * 80)
     print('Finding outliers with DiffPath-1d estimator')
-    # Get the outliers with 1d estimator
-    # Separate the outliers to False Negative and True Negative indices
-    fn_indices, tn_indices = get_topk_score_indices(naive_1d_id_score, naive_1d_ood_score, args.num_filter1_samples, False)
-    print(f'Among {args.num_filter1_samples} outliers, {fn_indices.shape[0]} are actually ID samples')
-    outlier_6d_id_stats, outlier_6d_ood_stats = id_test_stats_6d[fn_indices], ood_test_stats_6d[tn_indices]
-    outlier_6d_id_score, outlier_6d_ood_score = naive_6d_id_score[fn_indices], naive_6d_ood_score[tn_indices]
-    print('Evaluating ID samples with DiffPath-6d estimator from outliers')
-    pseudo_id_stats_6d, pseudo_id_score_6d, pseudo_id_label_6d, tp_ratio_6d = get_topk_score_stats(
-        outlier_6d_id_stats, outlier_6d_id_score,
-        outlier_6d_ood_stats, outlier_6d_ood_score,
-        args.num_filter2_samples, True
-    )
-    print(f'Among {args.num_filter2_samples} pseudo-id samples, {np.sum(pseudo_id_label_6d)} are actually ID samples')
+    fn_indices, tn_indices = get_topk_score_indices(naive_1d_id_score, 
+                                                    naive_1d_ood_score, 
+                                                    args.num_filter1_samples, 
+                                                    False)
+    assert args.num_filter1_samples == fn_indices.shape[0] + tn_indices.shape[0]
+    print(f'Among {args.num_filter1_samples} outliers, \
+            {fn_indices.shape[0]} are actually ID samples')
 
-    # Enhance train stats with pseudo-id stats
-    enhanced_train_stats_6d = enhance_train_stats(train_stats_6d, pseudo_id_stats_6d, args.num_filter2_samples)
-    print(f'Fitting new GMM estimator with enhanced training stats {enhanced_train_stats_6d.shape[0]}')
-    enhanced_6d_estimator = gridsearch_and_fit(gmm_clf, param_grid, enhanced_train_stats_6d)
-    enhanced_6d_id_score, enhanced_6d_ood_score = eval_score_with_stats(enhanced_6d_estimator, id_test_stats_6d, ood_test_stats_6d)
-    print('Enhanced id score evaluated with 6d estimator: ', enhanced_6d_id_score.mean())
-    print('Enhanced ood score evaluated with 6d estimator: ', enhanced_6d_ood_score.mean())
-    enhanced_6d_auroc = eval_auroc_with_score(enhanced_6d_id_score, enhanced_6d_ood_score)
-    print('AUROC after enhancement evaluated with 6d estimator: ', enhanced_6d_auroc)
+    # Find p-id samples with DiffPath-6D Estimator from outliers
+    print('Finding pseudo-ID samples with DiffPath-6d estimator from outliers')
+    outlier_6d_id_stats, outlier_6d_ood_stats = (id_test_stats_6d[fn_indices], 
+                                                 ood_test_stats_6d[tn_indices])
+    outlier_6d_id_score, outlier_6d_ood_score = (naive_6d_id_score[fn_indices], 
+                                                 naive_6d_ood_score[tn_indices]) 
+    outlier_1d_id_stats, outlier_1d_ood_stats = (id_test_stats_1d[fn_indices], 
+                                                 ood_test_stats_1d[tn_indices])
+    outlier_1d_id_score, outlier_1d_ood_score = (naive_1d_id_score[fn_indices], 
+                                                 naive_1d_ood_score[tn_indices])
+    
+    pid_tp_indices, pid_fp_indices = get_topk_score_indices(outlier_6d_id_score, 
+                                                            outlier_6d_ood_score, 
+                                                            args.num_filter2_samples, 
+                                                            True) 
+    assert args.num_filter2_samples == pid_fp_indices.shape[0] + pid_tp_indices.shape[0]
+    print(f'Among {args.num_filter2_samples} pseudo-id samples, \
+          {pid_tp_indices.shape[0]} are actually ID samples')
+    
+    # Experiment 1-1: 
+    # 1D outlier detection -> 6D p-id detection -> 1D final classification
+    print('-' * 80)
+    print('Doing final classification with 1D estimator')
+    pseudo_id_stats_1d = merge_stats_with_indices(outlier_1d_id_stats, pid_tp_indices, 
+                                                  outlier_1d_ood_stats, pid_fp_indices)
+    pseudo_id_stats_6d = merge_stats_with_indices(outlier_6d_id_stats, pid_tp_indices, 
+                                                  outlier_6d_ood_stats, pid_fp_indices)
 
-    outlier_1d_id_stats, outlier_1d_ood_stats = id_test_stats_1d[fn_indices], ood_test_stats_1d[tn_indices]
-    outlier_1d_id_score, outlier_1d_ood_score = naive_1d_id_score[fn_indices], naive_1d_ood_score[tn_indices]
-    print('==================================================================================================')
-    print('Evaluating ID samples with DiffPath-1d estimator from outliers')
-    pseudo_id_stats_1d, pseudo_id_score_1d, pseudo_id_label_1d, tp_ratio_1d = get_topk_score_stats(
-        outlier_1d_id_stats, outlier_1d_id_score,
-        outlier_1d_ood_stats, outlier_1d_ood_score,
-        args.num_filter2_samples, True
-    )
-    print(f'Among {args.num_filter2_samples} pseudo-id samples, {np.sum(pseudo_id_label_1d)} are actually ID samples')
-    # Enhance train stats with pseudo-id stats
-    enhanced_train_stats_1d = enhance_train_stats(train_stats_1d, pseudo_id_stats_1d, args.num_filter2_samples)
-    print(f'Fitting new 1d estimator with enhanced training stats {enhanced_train_stats_1d.shape[0]}')
+    enhanced_train_stats_1d = enhance_train_stats(train_stats_1d, 
+                                                  pseudo_id_stats_1d, 
+                                                  args.num_filter2_samples)
+    print(f'Fitting new 1D estimator with enhanced training stats {enhanced_train_stats_1d.shape[0]}')
     enhanced_1d_estimator = get_1d_estimator(enhanced_train_stats_1d)
-    enhanced_1d_id_score, enhanced_1d_ood_score = eval_score_with_stats(enhanced_1d_estimator, id_test_stats_1d, ood_test_stats_1d)
+    enhanced_1d_id_score, enhanced_1d_ood_score = eval_score_with_stats(enhanced_1d_estimator, 
+                                                                        id_test_stats_1d, 
+                                                                        ood_test_stats_1d)
     print('Enhanced id score evaluated with 1d estimator: ', enhanced_1d_id_score.mean())
     print('Enhanced ood score evaluated with 1d estimator: ', enhanced_1d_ood_score.mean())
     enhanced_1d_auroc = eval_auroc_with_score(enhanced_1d_id_score, enhanced_1d_ood_score)
     print('AUROC after enhancement evaluated with 1d estimator: ', enhanced_1d_auroc)
+    # Experiment 1-1 finishes here
+    # Experiment 1-2: 
+    # 1D outlier detection -> 6D p-id detection -> 6D final classification
+    # Enhance pseudo-id set with p-id samples
+    print('-' * 80)
+    print('Doing final classification with 6D estimator')
+    enhanced_train_stats_6d = enhance_train_stats(train_stats_6d, 
+                                                  pseudo_id_stats_6d, 
+                                                  args.num_filter2_samples)
+    print(f'Fitting new GMM estimator with enhanced training stats {enhanced_train_stats_6d.shape[0]}')
+    enhanced_6d_estimator = gridsearch_and_fit(gmm_clf, param_grid, enhanced_train_stats_6d)
+    enhanced_6d_id_score, enhanced_6d_ood_score = eval_score_with_stats(enhanced_6d_estimator, 
+                                                                        id_test_stats_6d, 
+                                                                        ood_test_stats_6d)
+    print('Enhanced id score evaluated with 6d estimator: ', enhanced_6d_id_score.mean())
+    print('Enhanced ood score evaluated with 6d estimator: ', enhanced_6d_ood_score.mean())
+    enhanced_6d_auroc = eval_auroc_with_score(enhanced_6d_id_score, enhanced_6d_ood_score)
+    print('AUROC after enhancement evaluated with 6d estimator: ', enhanced_6d_auroc)
+    # Experiment 1-2 ends here
+    # Experiment 1 ends here
+    ###########################################################################
 
-    # Use DiffPath-6d as the first filter``
-    print('\n\n')
-    print('---------------------------------------------------------------------------------')
+    ###########################################################################
+    # Experiment 2: 
+    # 6D outlier detection -> 1D p-id detection
+    print('=' * 80)
     print('Finding outliers with DiffPath-6d estimator')
-    # Get the outliers with 1d estimator
-    # Separate the outliers to False Negative and True Negative indices
-    fn_indices, tn_indices = get_topk_score_indices(naive_6d_id_score, naive_6d_ood_score, args.num_filter1_samples, False)
-    print(f'Among {args.num_filter1_samples} outliers, {fn_indices.shape[0]} are actually ID samples')
-    outlier_6d_id_stats, outlier_6d_ood_stats = id_test_stats_6d[fn_indices], ood_test_stats_6d[tn_indices]
-    outlier_6d_id_score, outlier_6d_ood_score = naive_6d_id_score[fn_indices], naive_6d_ood_score[tn_indices]
-    print('Evaluating ID samples with DiffPath-6d estimator from outliers')
-    pseudo_id_stats_6d, pseudo_id_score_6d, pseudo_id_label_6d, tp_ratio_6d = get_topk_score_stats(
-        outlier_6d_id_stats, outlier_6d_id_score,
-        outlier_6d_ood_stats, outlier_6d_ood_score,
-        args.num_filter2_samples, True
-    )
-    print(f'Among {args.num_filter2_samples} pseudo-id samples, {np.sum(pseudo_id_label_6d)} are actually ID samples')
+    fn_indices, tn_indices = get_topk_score_indices(naive_6d_id_score, 
+                                                    naive_6d_ood_score, 
+                                                    args.num_filter1_samples, 
+                                                    False)
+    assert args.num_filter1_samples == fn_indices.shape[0] + tn_indices.shape[0]
+    print(f'Among {args.num_filter1_samples} outliers, \
+            {fn_indices.shape[0]} are actually ID samples')
 
-    # Enhance train stats with pseudo-id stats
-    enhanced_train_stats_6d = enhance_train_stats(train_stats_6d, pseudo_id_stats_6d, args.num_filter2_samples)
-    print(f'Fitting new GMM estimator with enhanced training stats {enhanced_train_stats_6d.shape[0]}')
-    enhanced_6d_estimator = gridsearch_and_fit(gmm_clf, param_grid, enhanced_train_stats_6d)
-    enhanced_6d_id_score, enhanced_6d_ood_score = eval_score_with_stats(enhanced_6d_estimator, id_test_stats_6d, ood_test_stats_6d)
-    print('Enhanced id score evaluated with 6d estimator: ', enhanced_6d_id_score.mean())
-    print('Enhanced ood score evaluated with 6d estimator: ', enhanced_6d_ood_score.mean())
-    enhanced_6d_auroc = eval_auroc_with_score(enhanced_6d_id_score, enhanced_6d_ood_score)
-    print('AUROC after enhancement evaluated with 6d estimator: ', enhanced_6d_auroc)
-
-    outlier_1d_id_stats, outlier_1d_ood_stats = id_test_stats_1d[fn_indices], ood_test_stats_1d[tn_indices]
-    outlier_1d_id_score, outlier_1d_ood_score = naive_1d_id_score[fn_indices], naive_1d_ood_score[tn_indices]
-    print('==================================================================================================')
-    print('Evaluating ID samples with DiffPath-1d estimator from outliers')
-    pseudo_id_stats_1d, pseudo_id_score_1d, pseudo_id_label_1d, tp_ratio_1d = get_topk_score_stats(
-        outlier_1d_id_stats, outlier_1d_id_score,
-        outlier_1d_ood_stats, outlier_1d_ood_score,
-        args.num_filter2_samples, True
-    )
-    print(f'Among {args.num_filter2_samples} pseudo-id samples, {np.sum(pseudo_id_label_1d)} are actually ID samples')
-    # Enhance train stats with pseudo-id stats
-    enhanced_train_stats_1d = enhance_train_stats(train_stats_1d, pseudo_id_stats_1d, args.num_filter2_samples)
-    print(f'Fitting new 1d estimator with enhanced training stats {enhanced_train_stats_1d.shape[0]}')
+    # Find p-id samples with DiffPath-6D Estimator from outliers
+    print('Finding pseudo-ID samples with DiffPath-1d estimator from outliers')
+    outlier_6d_id_stats, outlier_6d_ood_stats = (id_test_stats_6d[fn_indices], 
+                                                 ood_test_stats_6d[tn_indices])
+    outlier_6d_id_score, outlier_6d_ood_score = (naive_6d_id_score[fn_indices], 
+                                                 naive_6d_ood_score[tn_indices]) 
+    outlier_1d_id_stats, outlier_1d_ood_stats = (id_test_stats_1d[fn_indices], 
+                                                 ood_test_stats_1d[tn_indices])
+    outlier_1d_id_score, outlier_1d_ood_score = (naive_1d_id_score[fn_indices], 
+                                                 naive_1d_ood_score[tn_indices])
+    
+    pid_tp_indices, pid_fp_indices = get_topk_score_indices(outlier_1d_id_score, 
+                                                            outlier_1d_ood_score, 
+                                                            args.num_filter2_samples, 
+                                                            True) 
+    assert args.num_filter2_samples == pid_fp_indices.shape[0] + pid_tp_indices.shape[0]
+    print(f'Among {args.num_filter2_samples} pseudo-id samples, \
+          {pid_tp_indices.shape[0]} are actually ID samples')
+    
+    # Experiment 2-1: 
+    # 6D outlier detection -> 1D p-id detection -> 1D final classification
+    print('-' * 80)
+    print('Doing final classification with 1D estimator')
+    pseudo_id_stats_1d = merge_stats_with_indices(outlier_1d_id_stats, pid_tp_indices, 
+                                                  outlier_1d_ood_stats, pid_fp_indices)
+    pseudo_id_stats_6d = merge_stats_with_indices(outlier_6d_id_stats, pid_tp_indices, 
+                                                  outlier_6d_ood_stats, pid_fp_indices)
+    enhanced_train_stats_1d = enhance_train_stats(train_stats_1d, 
+                                                  pseudo_id_stats_1d, 
+                                                  args.num_filter2_samples)
+    print(f'Fitting new 1D estimator with enhanced training stats {enhanced_train_stats_1d.shape[0]}')
     enhanced_1d_estimator = get_1d_estimator(enhanced_train_stats_1d)
-    enhanced_1d_id_score, enhanced_1d_ood_score = eval_score_with_stats(enhanced_1d_estimator, id_test_stats_1d, ood_test_stats_1d)
+    enhanced_1d_id_score, enhanced_1d_ood_score = eval_score_with_stats(enhanced_1d_estimator, 
+                                                                        id_test_stats_1d, 
+                                                                        ood_test_stats_1d)
     print('Enhanced id score evaluated with 1d estimator: ', enhanced_1d_id_score.mean())
     print('Enhanced ood score evaluated with 1d estimator: ', enhanced_1d_ood_score.mean())
     enhanced_1d_auroc = eval_auroc_with_score(enhanced_1d_id_score, enhanced_1d_ood_score)
     print('AUROC after enhancement evaluated with 1d estimator: ', enhanced_1d_auroc)
-
-
-
+    # Experiment 2-1 finishes here
+    # Experiment 2-2: 
+    # 6D outlier detection -> 1D p-id detection -> 6D final classification
+    # Enhance pseudo-id set with p-id samples
+    print('-' * 80)
+    print('Doing final classification with 6D estimator')
+    enhanced_train_stats_6d = enhance_train_stats(train_stats_6d, 
+                                                  pseudo_id_stats_6d, 
+                                                  args.num_filter2_samples)
+    print(f'Fitting new GMM estimator with enhanced training stats {enhanced_train_stats_6d.shape[0]}')
+    enhanced_6d_estimator = gridsearch_and_fit(gmm_clf, param_grid, enhanced_train_stats_6d)
+    enhanced_6d_id_score, enhanced_6d_ood_score = eval_score_with_stats(enhanced_6d_estimator, 
+                                                                        id_test_stats_6d, 
+                                                                        ood_test_stats_6d)
+    print('Enhanced id score evaluated with 6d estimator: ', enhanced_6d_id_score.mean())
+    print('Enhanced ood score evaluated with 6d estimator: ', enhanced_6d_ood_score.mean())
+    enhanced_6d_auroc = eval_auroc_with_score(enhanced_6d_id_score, enhanced_6d_ood_score)
+    print('AUROC after enhancement evaluated with 6d estimator: ', enhanced_6d_auroc)
 
 if __name__ == '__main__':
     main()
