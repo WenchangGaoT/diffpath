@@ -1,0 +1,5 @@
+tot samples:  50000
+Train stats: (5,)
+--------------------------------------------------------------------------------
+Calculating scores and AUROC with 5 training samples
+Fitting 10 folds for each of 96 candidates, totalling 960 fits

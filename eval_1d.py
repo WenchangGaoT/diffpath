@@ -11,7 +11,7 @@ def load_1d_statistics(d):
 
 def get_1d_estimator(train_stats_1d):
     # load in distribution training dataset statistics
-    kde_bandwith = 5
+    kde_bandwith = 0.01
     id_train_deps_dt_sq_sqrt = train_stats_1d.reshape(-1,1)
     print("Fitting KDE to in dist training set")
     kde = KernelDensity(kernel="gaussian", bandwidth=kde_bandwith).fit(id_train_deps_dt_sq_sqrt)
