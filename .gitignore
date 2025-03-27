@@ -169,3 +169,4 @@ cython_debug/
 
 # removed ignorance of checkpoints
 *.pt
+.DS_Store/
