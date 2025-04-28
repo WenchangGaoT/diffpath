@@ -54,3 +54,9 @@ Best: -8.785932 using {'GMM__covariance_type': 'diag', 'GMM__max_iter': 100, 'GM
 Enhanced id score evaluated with 6d estimator:  -6.625447497754858
 Enhanced ood score evaluated with 6d estimator:  -11.42916724739084
 AUROC after enhancement evaluated with 6d estimator:  0.8457474300860479
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 100 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 100 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 100 training samples

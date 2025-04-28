@@ -946,3 +946,63 @@ Naive DiffPath-6d:	0.8451025361094038	0.001514500706555152
 1->6->6 DP-1d: 	0.5908584150276583	0.005950352085812307
 6->1->1 DP-1d: 	0.8083412304087277	0.006286331944095433
 6->1->6 DP-1d: 	0.852034668100799	0.0040953469327471795
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 30 training samples

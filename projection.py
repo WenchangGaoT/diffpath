@@ -60,7 +60,7 @@ def plot_histograms(all_left_bins: dict, id_left_hist: dict, ood_left_hist: dict
   plt.show()
   
 def plot_selected_density(all_left_bins: dict, id_left_hist: dict, ood_left_hist: dict, 
-                          selected_hist:dict, 
+                          id_selected_hist: dict, ood_selected_hist: dict,
                           keys: list[str]):
   '''
   Plot the densities of selected samples within a range in <left_dim> in all other dimensions included in <keys>
@@ -70,7 +70,8 @@ def plot_selected_density(all_left_bins: dict, id_left_hist: dict, ood_left_hist
   for i, k in enumerate(keys):
     # plt.subplot(1, i + 1,i + 1)
     axes[floor(i/5), i%5].plot(all_left_bins[k][:-1], id_left_hist[k]/np.sum(id_left_hist[k]), label="ID", color='blue', drawstyle='steps-post')
-    axes[floor(i/5), i%5].plot(all_left_bins[k][:-1], selected_hist[k]/np.sum(selected_hist[k]), label="Selected samples", color='green', drawstyle='steps-post')
+    axes[floor(i/5), i%5].plot(all_left_bins[k][:-1], id_selected_hist[k]/np.sum(id_selected_hist[k]), label="ID Selected samples", color='green', drawstyle='steps-post')
+    axes[floor(i/5), i%5].plot(all_left_bins[k][:-1], ood_selected_hist[k]/np.sum(ood_selected_hist[k]), label="OOD Selected samples", color='pink', drawstyle='steps-post')
     axes[floor(i/5), i%5].plot(all_left_bins[k][:-1], ood_left_hist[k]/np.sum(ood_left_hist[k]), label="OOD", color='red', drawstyle='steps-post')
     # axes[i].xlabel(f"{k}")
     # axes[i].ylabel("Density")
@@ -97,9 +98,16 @@ def main(args):
   ood_right_values = ood_stats_dict[args.right_dim]
   ood_left_values = ood_stats_dict[args.left_dim]
 
-  indices = extract_indices_within_range(id_left_values, args.min_value, args.max_value)
+  id_indices = extract_indices_within_range(id_left_values, args.min_value, args.max_value)
+  ood_indices = extract_indices_within_range(ood_left_values, args.min_value, args.max_value)
+  print(f'{len(id_indices)} out of {len(id_stats_dict[args.left_dim])}samples lie in range [{args.min_value}, {args.max_value}] in dimension {args.left_dim}')
+  print(f'{len(ood_indices)} out of {len(ood_stats_dict[args.left_dim])}samples lie in range [{args.min_value}, {args.max_value}] in dimension {args.left_dim}')
+  np.random.shuffle(id_indices)
+  np.random.shuffle(ood_indices)
+  id_indices = id_indices[-10:]
+  ood_indices = ood_indices[-10:]
+  # indices = extract_indices_within_range(ood_left_values, args.min_value, args.max_value)
 
-  print(f'{len(indices)} out of {len(id_stats_dict[args.left_dim])}samples lie in range [{args.min_value}, {args.max_value}] in dimension {args.left_dim}')
   # num_bins = 1000
   # all_left_stats = np.concatenate([id_left_values, ood_left_values])
   # all_left_bins = np.linspace(all_left_stats.min(), all_left_stats.max(), num_bins+1)
@@ -113,7 +121,8 @@ def main(args):
   # ood_right_hist = np.histogram(ood_right_hist, all_right_bins)
   keys = id_stats_dict.keys()
   all_bins_dict, id_hist_dict, ood_hist_dict = {}, {}, {}
-  selected_hist_dict = {}
+  id_selected_hist_dict = {}
+  ood_selected_hist_dict = {}
   for i, k in enumerate(keys):
     num_bins = 1000
 
@@ -122,15 +131,19 @@ def main(args):
     all_left_bins = np.linspace(all_left_stats.min(), all_left_stats.max(), num_bins + 1)
     all_bins_dict[k] = all_left_bins
 
-    selected_stats = id_stats_dict[k][indices]
+    id_selected_stats = id_stats_dict[k][id_indices]
+    ood_selected_stats = ood_stats_dict[k][ood_indices]
+    # selected_stats = ood_stats_dict[k][indices]
     id_left_hist, _ = np.histogram(id_stats_dict[k], bins=all_left_bins)
     ood_left_hist, _ = np.histogram(ood_stats_dict[k], bins=all_left_bins)
-    selected_hist, _ = np.histogram(selected_stats, bins=all_left_bins)
+    id_selected_hist, _ = np.histogram(id_selected_stats, bins=all_left_bins)
+    ood_selected_hist, _ = np.histogram(ood_selected_stats, bins=all_left_bins)
     id_hist_dict[k] = id_left_hist
     ood_hist_dict[k] = ood_left_hist
-    selected_hist_dict[k] = selected_hist
+    id_selected_hist_dict[k] = id_selected_hist
+    ood_selected_hist_dict[k] = ood_selected_hist
 
-  plot_selected_density(all_bins_dict, id_hist_dict, ood_hist_dict, selected_hist_dict,keys)
+  plot_selected_density(all_bins_dict, id_hist_dict, ood_hist_dict, id_selected_hist_dict, ood_selected_hist_dict, keys)
 
 
 if __name__ == '__main__':

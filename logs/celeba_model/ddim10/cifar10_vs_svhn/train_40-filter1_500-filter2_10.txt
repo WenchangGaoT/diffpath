@@ -1,0 +1,60 @@
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
+INFO:__main__:--------------------------------------------------------------------------------
+INFO:__main__:Calculating scores and AUROC with 40 training samples
