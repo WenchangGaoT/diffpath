@@ -173,6 +173,10 @@ def merge_stats_with_indices(stats1: np.ndarray,
     Return: 
         Merged ndarray after shuffle
     '''
-    s1, s2 = stats1[indices1], stats2[indices2]
+    s1, s2 = [], []
+    if indices1.shape[0] > 0 and stats1.shape[0] > 0:
+        s1 = stats1[indices1]
+    if indices2.shape[0] > 0 and stats2.shape[0] > 0:
+        s2 = stats2[indices2]
     s = np.concatenate([s1, s2], axis=0)
     return np.random.permutation(s)
