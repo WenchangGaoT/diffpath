@@ -48,7 +48,6 @@ def plot_histograms(all_left_bins: dict, id_left_hist: dict, ood_left_hist: dict
   fig, axes = plt.subplots(ceil(len(keys) / 5), 5, figsize=(15, 9))
 
   for i, k in enumerate(keys):
-    # plt.subplot(1, i + 1,i + 1)
     axes[floor(i/5), i%5].plot(all_left_bins[k][:-1], id_left_hist[k]/np.sum(id_left_hist[k]), label="ID", color='blue', drawstyle='steps-post')
     axes[floor(i/5), i%5].plot(all_left_bins[k][:-1], ood_left_hist[k]/np.sum(ood_left_hist[k]), label="OOD", color='red', drawstyle='steps-post')
     # axes[i].xlabel(f"{k}")
