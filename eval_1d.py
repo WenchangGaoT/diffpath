@@ -2,6 +2,10 @@ import numpy as np
 import argparse
 from sklearn.metrics import roc_auc_score
 from sklearn.neighbors import KernelDensity
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.mixture import GaussianMixture
 import os
 
 
@@ -11,12 +15,27 @@ def load_1d_statistics(d):
 
 def get_1d_estimator(train_stats_1d):
     # load in distribution training dataset statistics
-    kde_bandwith = 0.01
-    id_train_deps_dt_sq_sqrt = train_stats_1d.reshape(-1,1)
-    print("Fitting KDE to in dist training set")
-    kde = KernelDensity(kernel="gaussian", bandwidth=kde_bandwith).fit(id_train_deps_dt_sq_sqrt)
-    return kde
-
+    # kde_bandwith = 0.01
+    # id_train_deps_dt_sq_sqrt = train_stats_1d.reshape(-1,1)
+    # print("Fitting KDE to in dist training set")
+    # kde = KernelDensity(kernel="gaussian", bandwidth=kde_bandwith).fit(id_train_deps_dt_sq_sqrt)
+    # return kde
+    param_grid = {
+    'GMM__n_components': [3, 5, 10, 20, 50, 100],
+    'GMM__covariance_type': ['full', 'tied', 'diag', 'spherical'],
+    'GMM__max_iter': [100, 200, 300, 500]
+    }
+    gmm_clf = Pipeline([
+        ('scaler', StandardScaler()),
+        ('GMM', GaussianMixture())
+    ]) 
+    grid = GridSearchCV(estimator=gmm_clf, param_grid=param_grid, cv=10, n_jobs=5,verbose=1)
+    grid_result = grid.fit(train_stats_1d)
+    print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+    train_score = grid_result.best_score_
+    best_gmm = gmm_clf.set_params(**grid.best_params_)
+    best_gmm.fit(train_stats_1d)
+    return best_gmm
 
 def main():
 
